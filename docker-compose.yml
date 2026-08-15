@@ -1,0 +1,209 @@
+name: scaleforge
+
+x-app-environment: &app-environment
+  NODE_ENV: production
+  PORT: 3000
+  LOG_LEVEL: info
+  DATABASE_URL: postgresql://scaleforge:scaleforge@postgres:5432/scaleforge?schema=public
+  REDIS_URL: redis://redis:6379
+  RABBITMQ_URL: amqp://scaleforge:scaleforge@rabbitmq:5672
+  JWT_ACCESS_SECRET: local-only-access-secret-change-before-any-deployment
+  JWT_REFRESH_SECRET: local-only-refresh-secret-change-before-any-deployment
+  JWT_ACCESS_TTL_SECONDS: 900
+  JWT_REFRESH_TTL_SECONDS: 2592000
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+
+x-app-dependencies: &app-dependencies
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  rabbitmq:
+    condition: service_healthy
+
+services:
+  api:
+    build:
+      context: .
+      target: runtime
+    image: scaleforge-api:local
+    environment:
+      <<: *app-environment
+      OTEL_SERVICE_NAME: scaleforge-api
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - '${API_PORT:-3000}:3000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/v1/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  migrate:
+    build:
+      context: .
+      target: migration
+    image: scaleforge-migrate:local
+    environment:
+      <<: *app-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+    security_opt:
+      - no-new-privileges:true
+
+  worker:
+    image: scaleforge-api:local
+    command: ['node', '--import', './dist/instrumentation.js', 'dist/worker.js']
+    environment:
+      <<: *app-environment
+      OTEL_SERVICE_NAME: scaleforge-worker
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: postgres:17.4-alpine
+    environment:
+      POSTGRES_DB: scaleforge
+      POSTGRES_USER: scaleforge
+      POSTGRES_PASSWORD: scaleforge
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U scaleforge -d scaleforge']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.2-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.0.7-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: scaleforge
+      RABBITMQ_DEFAULT_PASS: scaleforge
+    ports:
+      - '${RABBITMQ_MANAGEMENT_PORT:-15672}:15672'
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.13.1
+    command: ['--config.file=/etc/prometheus/prometheus.yml', '--storage.tsdb.path=/prometheus']
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - '${PROMETHEUS_PORT:-9090}:9090'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.7.3
+    command: ['-config.file=/etc/loki/config.yml']
+    volumes:
+      - ./observability/loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    ports:
+      - '${LOKI_PORT:-3100}:3100'
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.18.0
+    command: ['run', '/etc/alloy/config.alloy', '--storage.path=/var/lib/alloy/data']
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy-data:/var/lib/alloy/data
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.10.5
+    command: ['-config.file=/etc/tempo/config.yml']
+    volumes:
+      - ./observability/tempo/config.yml:/etc/tempo/config.yml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - '${TEMPO_PORT:-3200}:3200'
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.158.0
+    command: ['--config=/etc/otelcol/config.yml']
+    volumes:
+      - ./observability/otel-collector/config.yml:/etc/otelcol/config.yml:ro
+    depends_on:
+      - tempo
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.1.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: local-only-admin
+      GF_AUTH_ANONYMOUS_ENABLED: 'false'
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - '${GRAFANA_PORT:-3001}:3000'
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  alloy-data:
+  tempo-data:

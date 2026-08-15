@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: scaleforge-migrate
+  namespace: scaleforge
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: scaleforge
+      containers:
+        - name: migrate
+          image: ghcr.io/your-org/scaleforge-migrate:0.1.0
+          command: ['npx', 'prisma', 'migrate', 'deploy']
+          envFrom:
+            - configMapRef:
+                name: scaleforge-config
+            - secretRef:
+                name: scaleforge-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ['ALL']

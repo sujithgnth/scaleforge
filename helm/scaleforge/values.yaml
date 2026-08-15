@@ -1,0 +1,50 @@
+replicaCount: 2
+workerReplicaCount: 1
+
+image:
+  repository: ghcr.io/your-org/scaleforge
+  tag: '0.1.0'
+  pullPolicy: IfNotPresent
+
+migrationImage:
+  repository: ghcr.io/your-org/scaleforge-migrate
+  tag: '0.1.0'
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: nginx
+  host: api.scaleforge.example.com
+  tlsSecretName: scaleforge-tls
+
+config:
+  logLevel: info
+  accessTokenTtlSeconds: '900'
+  refreshTokenTtlSeconds: '2592000'
+  otlpEndpoint: http://otel-collector.observability:4318/v1/traces
+
+# Supply these through an encrypted values file or an external-secret integration.
+secrets:
+  databaseUrl: postgresql://user:change-me@postgres:5432/scaleforge
+  redisUrl: redis://redis:6379
+  rabbitmqUrl: amqp://user:change-me@rabbitmq:5672
+  jwtAccessSecret: change-me-with-at-least-32-characters
+  jwtRefreshSecret: change-me-differently-with-32-characters
+  sentryDsn: ''
+
+resources:
+  requests: { cpu: 200m, memory: 256Mi }
+  limits: { cpu: '1', memory: 768Mi }
+
+workerResources:
+  requests: { cpu: 100m, memory: 192Mi }
+  limits: { cpu: '1', memory: 512Mi }
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70

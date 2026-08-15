@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: scaleforge
+resources:
+  - namespace.yaml
+  - service-account.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - worker-deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - hpa.yaml
+  - migration-job.yaml
+# Apply a real secret separately; secret.example.yaml is deliberately excluded.

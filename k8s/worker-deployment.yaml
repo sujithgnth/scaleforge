@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scaleforge-worker
+  namespace: scaleforge
+  labels:
+    app.kubernetes.io/name: scaleforge
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: scaleforge
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: scaleforge
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: scaleforge
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: worker
+          image: ghcr.io/your-org/scaleforge:0.1.0
+          command: ['node', '--import', './dist/instrumentation.js', 'dist/worker.js']
+          envFrom:
+            - configMapRef:
+                name: scaleforge-config
+            - secretRef:
+                name: scaleforge-secrets
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: scaleforge-worker
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: '1'
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ['ALL']
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

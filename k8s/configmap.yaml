@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scaleforge-config
+  namespace: scaleforge
+data:
+  NODE_ENV: production
+  PORT: '3000'
+  LOG_LEVEL: info
+  JWT_ACCESS_TTL_SECONDS: '900'
+  JWT_REFRESH_TTL_SECONDS: '2592000'
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability:4318/v1/traces

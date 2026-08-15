@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: scaleforge-api
+  namespace: scaleforge
+spec:
+  selector:
+    app.kubernetes.io/name: scaleforge
+    app.kubernetes.io/component: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  type: ClusterIP
