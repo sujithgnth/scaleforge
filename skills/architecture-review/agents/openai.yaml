@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Architecture Review'
+  short_description: 'Review boundaries, trade-offs, and failure modes'
+  default_prompt: 'Use $architecture-review to review this design and its trade-offs.'

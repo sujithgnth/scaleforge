@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Performance Analysis'
+  short_description: 'Analyze latency, load, and scaling bottlenecks'
+  default_prompt: 'Use $performance-analysis to assess this flow under production load.'

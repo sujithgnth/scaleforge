@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Backend Review'
+  short_description: 'Review NestJS backend changes for production quality'
+  default_prompt: 'Use $backend-review to review this backend change for correctness and maintainability.'

@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Security Analysis'
+  short_description: 'Find and prioritize backend security risks'
+  default_prompt: 'Use $security-analysis to analyze this ScaleForge change for security risks.'
