@@ -1,5 +1,7 @@
 # ScaleForge
 
+[Portfolio & résumé](https://sujithgnth.github.io/sujeithgopinath/#resume)
+
 ScaleForge is a production-style NestJS modular monolith for experimenting with backend performance, failure, and resilience. It is deliberately more than CRUD: transactional business flows, durable event publication, idempotent consumers, cache invalidation, telemetry, container deployment, and operational failure paths are first-class parts of the codebase.
 
 The repository is a foundation, not a claim that a local stack behaves like a global production system. Capacity and resilience claims must come from repeatable tests and observed metrics.
