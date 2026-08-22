@@ -15,8 +15,10 @@ async function generate(): Promise<void> {
   // Import compiled modules so Nest receives TypeScript's decorator metadata; tsx/esbuild
   // intentionally does not emit all metadata required for constructor injection.
   const [{ AppModule }, { buildOpenApiDocument, setupApplication }] = await Promise.all([
-    import('../dist/app.module.js'),
-    import('../dist/bootstrap/setup-application.js'),
+    import('../dist/app.module.js') as Promise<typeof import('../src/app.module.js')>,
+    import('../dist/bootstrap/setup-application.js') as Promise<
+      typeof import('../src/bootstrap/setup-application.js')
+    >,
   ]);
   const app = await NestFactory.create(AppModule, { logger: ['error'], abortOnError: false });
   setupApplication(app);
