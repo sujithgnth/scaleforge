@@ -1,10 +1,28 @@
 # ScaleForge
 
+[![CI](https://github.com/sujithgnth/scaleforge/actions/workflows/ci.yml/badge.svg)](https://github.com/sujithgnth/scaleforge/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 [Portfolio & résumé](https://sujithgnth.github.io/sujeithgopinath/#resume)
 
 ScaleForge is a production-style NestJS modular monolith for experimenting with backend performance, failure, and resilience. It is deliberately more than CRUD: transactional business flows, durable event publication, idempotent consumers, cache invalidation, telemetry, container deployment, and operational failure paths are first-class parts of the codebase.
 
 The repository is a foundation, not a claim that a local stack behaves like a global production system. Capacity and resilience claims must come from repeatable tests and observed metrics.
+
+## Scaling learning lab
+
+The [ScaleForge scaling lab](docs/scaling-lab.md) turns a 100-to-100M-users system-design ladder into staged, evidence-based exercises against this repository. It maps the implemented cache, outbox, queues, idempotency, health checks, and observability to the relevant scaling concepts while keeping sharding, multi-region, and other unproven designs clearly labeled as exercises.
+
+Run the bounded load probe against a local public endpoint:
+
+```bash
+npm run lab:scale -- \
+  --url http://localhost:3000/v1/health/live \
+  --rate 5 \
+  --duration 10
+```
+
+The probe reports achieved throughput, status/error counts, client-side backpressure, and successful-request p50/p95/p99 latency. It does not claim production capacity from a laptop run.
 
 ## Architecture
 

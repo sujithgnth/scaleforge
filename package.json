@@ -22,6 +22,7 @@
     "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config test/jest-e2e.json --runInBand",
     "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest --config test/jest-integration.json --runInBand",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --config test/jest-unit.json --coverage --runInBand",
+    "lab:scale": "tsx scripts/scaling-lab.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
