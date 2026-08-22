@@ -159,3 +159,13 @@ helm lint helm/scaleforge
 ## Developer AI support
 
 Repository rules live in [AGENTS.md](AGENTS.md). Focused agent briefs are under `.agents/`, and validated project skills are under `skills/` for backend, security, performance, and architecture reviews.
+
+## License
+
+**Proprietary — all rights reserved.** This repository is public for portfolio
+review only. Copying, modification, redistribution, reuse, or incorporation into
+another project is not permitted except for rights required by GitHub's Terms of
+Service or with prior written permission. See [LICENSE](LICENSE).
+
+The restriction applies prospectively and does not revoke permissions validly
+granted with an earlier version.
